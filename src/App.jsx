@@ -104,21 +104,6 @@ export default function App() {
       {/* CONTACT SECTION */}
       <ContactSection profile={profile} />
 
-      {/* MODAL POPUP (Now safe because 'modal' is defined above) */}
-      {modal && (
-        <div 
-          onClick={() => setModal(null)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, backdropFilter: 'blur(4px)' }}
-        >
-          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 20, maxWidth: 600, width: '100%', overflow: 'hidden' }}>
-            <img src={modal.image_url} style={{ width: '100%', maxHeight: '70vh', objectFit: 'contain' }} alt="" />
-            <div style={{ padding: 20 }}>
-              <h3 style={{ margin: 0 }}>{modal.title}</h3>
-              <p style={{ color: '#666' }}>{modal.issuer || modal.description}</p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* FOOTER */}
       <footer style={{ background: '#111', padding: '40px', color: '#fff', textAlign: 'center' }}>
