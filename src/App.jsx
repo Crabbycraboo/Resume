@@ -1,19 +1,18 @@
-import { useState, useEffect, useRef } from 'react' // <--- Added useRef here
+import { useState, useEffect, useRef } from 'react'
 import NichePanel from './components/NichePanel'
 import ContactSection from './components/ContactSection'
 import { fetchProfile, fetchNiches, fetchAllProjects, fetchAllCertificates } from './lib/supabase'
 
-// 1. Loading screen component
 function LoadingScreen() {
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, background: '#FAFAF9' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#FAFAF9' }}>
       <p style={{ fontSize: 14, color: '#AAA', fontWeight: 600 }}>Loading portfolio…</p>
     </div>
   )
 }
 
 export default function App() {
-  // 2. All State (Corrected & cleaned)
+  // --- ALL STATE (One place, no duplicates) ---
   const [profile, setProfile] = useState(null)
   const [niches, setNiches] = useState([])
   const [projects, setProjects] = useState({})
@@ -21,11 +20,10 @@ export default function App() {
   const [activeTab, setActiveTab] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [modal, setModal] = useState(null)
+  const [modal, setModal] = useState(null) // This fixes the "modal not defined" error
   
-  const portfolioRef = useRef(null) // This now works because of the import above
+  const portfolioRef = useRef(null) // This fixes the "useRef not defined" error
 
-  // 3. Data Fetching
   useEffect(() => {
     async function loadData() {
       try {
@@ -37,9 +35,8 @@ export default function App() {
         ])
 
         setProfile(profData)
-        setNiches(nicheData)
+        setNiches(nicheData || [])
         
-        // Group projects by niche
         const grouped = (projData || []).reduce((acc, p) => {
           const slug = p.niche_slug || 'other'
           if (!acc[slug]) acc[slug] = []
@@ -51,7 +48,7 @@ export default function App() {
         setCerts(certData || [])
         if (nicheData?.length > 0) setActiveTab(nicheData[0].slug)
       } catch (err) {
-        console.error("Supabase Error:", err)
+        console.error("Fetch Error:", err)
         setError(err.message)
       } finally {
         setLoading(false)
@@ -102,6 +99,22 @@ export default function App() {
       </main>
 
       <ContactSection profile={profile} />
+
+      {/* MODAL RENDER (The logic that was crashing) */}
+      {modal && (
+        <div 
+          onClick={() => setModal(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, backdropFilter: 'blur(4px)' }}
+        >
+          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 20, maxWidth: 600, width: '100%', overflow: 'hidden' }}>
+            <img src={modal.image_url} style={{ width: '100%', maxHeight: '70vh', objectFit: 'contain' }} alt="" />
+            <div style={{ padding: 20 }}>
+              <h3 style={{ margin: 0 }}>{modal.title}</h3>
+              <p style={{ color: '#666' }}>{modal.issuer || modal.description}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <footer style={{ background: '#111', padding: '40px', color: '#fff', textAlign: 'center' }}>
         <p style={{ fontSize: 14 }}>© {new Date().getFullYear()} {profile?.name}</p>
