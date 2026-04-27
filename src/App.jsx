@@ -12,7 +12,7 @@ function LoadingScreen() {
 }
 
 export default function App() {
-  // --- ALL STATE (One place, no duplicates) ---
+  // --- 1. STATE DECLARATIONS ---
   const [profile, setProfile] = useState(null)
   const [niches, setNiches] = useState([])
   const [projects, setProjects] = useState({})
@@ -20,10 +20,12 @@ export default function App() {
   const [activeTab, setActiveTab] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [modal, setModal] = useState(null) // This fixes the "modal not defined" error
   
-  const portfolioRef = useRef(null) // This fixes the "useRef not defined" error
+  // These were causing your last two errors:
+  const [modal, setModal] = useState(null) 
+  const portfolioRef = useRef(null)
 
+  // --- 2. DATA FETCHING ---
   useEffect(() => {
     async function loadData() {
       try {
@@ -69,7 +71,7 @@ export default function App() {
         <p style={{ marginTop: 20, color: '#666', maxWidth: 600, margin: '20px auto' }}>{profile?.bio}</p>
       </header>
 
-      {/* TABS */}
+      {/* TABS / NAVIGATION */}
       <nav style={{ display: 'flex', justifyContent: 'center', gap: 10, marginBottom: 40, flexWrap: 'wrap' }}>
         {niches.map(n => (
           <button 
@@ -87,20 +89,22 @@ export default function App() {
         ))}
       </nav>
 
-      {/* CONTENT */}
+      {/* MAIN CONTENT AREA */}
       <main ref={portfolioRef} style={{ maxWidth: 1100, margin: '0 auto', padding: '0 40px 80px' }}>
         {activeTab && (
           <NichePanel
             niche={niches.find(n => n.slug === activeTab)}
             projects={projects[activeTab] || []}
             certificates={certs.filter(c => c.niche === activeTab)}
+            setModal={setModal} 
           />
         )}
       </main>
 
+      {/* CONTACT SECTION */}
       <ContactSection profile={profile} />
 
-      {/* MODAL RENDER (The logic that was crashing) */}
+      {/* MODAL POPUP (Now safe because 'modal' is defined above) */}
       {modal && (
         <div 
           onClick={() => setModal(null)}
@@ -116,6 +120,7 @@ export default function App() {
         </div>
       )}
 
+      {/* FOOTER */}
       <footer style={{ background: '#111', padding: '40px', color: '#fff', textAlign: 'center' }}>
         <p style={{ fontSize: 14 }}>© {new Date().getFullYear()} {profile?.name}</p>
       </footer>

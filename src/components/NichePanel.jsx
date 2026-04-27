@@ -3,7 +3,7 @@ import ProjectCard from './ProjectCard'
 import CertGrid from './CertGrid'
 import Modal from './Modal'
 
-export default function NichePanel({ niche, projects, certificates }) {
+export default function NichePanel({ niche, projects, certificates, setModal }) {
   const { theme } = niche
   
   // This automatically picks up whatever is in the 'skills' column for that niche
