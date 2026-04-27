@@ -1,32 +1,31 @@
-
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react' // <--- Added useRef here
 import NichePanel from './components/NichePanel'
 import ContactSection from './components/ContactSection'
-import { 
-  fetchProfile, 
-  fetchNiches, 
-  fetchAllProjects, 
-  fetchAllCertificates 
-} from './lib/supabase'
+import { fetchProfile, fetchNiches, fetchAllProjects, fetchAllCertificates } from './lib/supabase'
 
-// Internal Components to prevent "not defined" errors
-const LoadingScreen = () => (
-  <div style={{ height: '100vh', display: 'flex', flexDirection: 'center', alignItems: 'center', justifyContent: 'center', background: '#FAFAF9' }}>
-    <p style={{ color: '#999', fontSize: 14, fontWeight: 600 }}>Loading portfolio...</p>
-  </div>
-)
+// 1. Loading screen component
+function LoadingScreen() {
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, background: '#FAFAF9' }}>
+      <p style={{ fontSize: 14, color: '#AAA', fontWeight: 600 }}>Loading portfolio…</p>
+    </div>
+  )
+}
 
 export default function App() {
- const [profile, setProfile] = useState(null)
+  // 2. All State (Corrected & cleaned)
+  const [profile, setProfile] = useState(null)
   const [niches, setNiches] = useState([])
   const [projects, setProjects] = useState({})
   const [certs, setCerts] = useState([])
   const [activeTab, setActiveTab] = useState(null)
-  const [scrolled, setScrolled] = useState(false)
-  const [showExp, setShowExp] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [modal, setModal] = useState(null) // ONLY ONE OF THESE
-  const portfolioRef = useRef(null)
+  const [error, setError] = useState(null)
+  const [modal, setModal] = useState(null)
+  
+  const portfolioRef = useRef(null) // This now works because of the import above
+
+  // 3. Data Fetching
   useEffect(() => {
     async function loadData() {
       try {
@@ -40,6 +39,7 @@ export default function App() {
         setProfile(profData)
         setNiches(nicheData)
         
+        // Group projects by niche
         const grouped = (projData || []).reduce((acc, p) => {
           const slug = p.niche_slug || 'other'
           if (!acc[slug]) acc[slug] = []
@@ -51,7 +51,7 @@ export default function App() {
         setCerts(certData || [])
         if (nicheData?.length > 0) setActiveTab(nicheData[0].slug)
       } catch (err) {
-        console.error(err)
+        console.error("Supabase Error:", err)
         setError(err.message)
       } finally {
         setLoading(false)
@@ -65,13 +65,15 @@ export default function App() {
 
   return (
     <div style={{ background: '#FAFAF9', minHeight: '100vh' }}>
+      {/* HEADER */}
       <header style={{ padding: '80px 40px 40px', textAlign: 'center' }}>
-        <h1 style={{ fontSize: 42, fontWeight: 900 }}>{profile?.name}</h1>
+        <h1 style={{ fontSize: 42, fontWeight: 900 }}>{profile?.name || 'Portfolio'}</h1>
         <p style={{ color: '#D4607A', fontWeight: 700 }}>{profile?.title}</p>
         <p style={{ marginTop: 20, color: '#666', maxWidth: 600, margin: '20px auto' }}>{profile?.bio}</p>
       </header>
 
-      <nav style={{ display: 'flex', justifyContent: 'center', gap: 10, marginBottom: 40 }}>
+      {/* TABS */}
+      <nav style={{ display: 'flex', justifyContent: 'center', gap: 10, marginBottom: 40, flexWrap: 'wrap' }}>
         {niches.map(n => (
           <button 
             key={n.id} 
@@ -79,15 +81,17 @@ export default function App() {
             style={{
               padding: '10px 20px', borderRadius: 25, border: 'none', cursor: 'pointer',
               background: activeTab === n.slug ? '#111' : '#EEE',
-              color: activeTab === n.slug ? '#FFF' : '#666'
+              color: activeTab === n.slug ? '#FFF' : '#666',
+              fontWeight: 600
             }}
           >
-            {n.title}
+            {n.name}
           </button>
         ))}
       </nav>
 
-      <main style={{ maxWidth: 1100, margin: '0 auto', padding: '0 40px 80px' }}>
+      {/* CONTENT */}
+      <main ref={portfolioRef} style={{ maxWidth: 1100, margin: '0 auto', padding: '0 40px 80px' }}>
         {activeTab && (
           <NichePanel
             niche={niches.find(n => n.slug === activeTab)}
@@ -98,33 +102,10 @@ export default function App() {
       </main>
 
       <ContactSection profile={profile} />
-      {modal && (
-  <div 
-    onClick={() => setModal(null)}
-    style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)', padding: 20 }}
-  >
-    <div 
-      onClick={e => e.stopPropagation()}
-      style={{ background: '#fff', borderRadius: 20, maxWidth: 800, width: '100%', overflow: 'hidden', position: 'relative' }}
-    >
-      <button 
-        onClick={() => setModal(null)}
-        style={{ position: 'absolute', top: 15, right: 15, border: 'none', background: '#eee', borderRadius: '50%', width: 30, height: 30, cursor: 'pointer', zIndex: 10 }}
-      >✕</button>
-      
-      {/* If it's a certificate or project image */}
-      <img 
-        src={modal.image_url} 
-        style={{ width: '100%', display: 'block', maxHeight: '80vh', objectFit: 'contain', background: '#f9f9f9' }} 
-        alt="Preview"
-      />
-      <div style={{ padding: 20 }}>
-        <h3 style={{ margin: 0 }}>{modal.title}</h3>
-        <p style={{ color: '#666', marginTop: 5 }}>{modal.issuer || modal.description}</p>
-      </div>
-    </div>
-  </div>
-)}
+
+      <footer style={{ background: '#111', padding: '40px', color: '#fff', textAlign: 'center' }}>
+        <p style={{ fontSize: 14 }}>© {new Date().getFullYear()} {profile?.name}</p>
+      </footer>
     </div>
   )
 }
