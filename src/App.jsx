@@ -17,7 +17,7 @@ const LoadingScreen = () => (
 )
 
 export default function App() {
- const [profile, setProfile] = useState(FALLBACK_PROFILE)
+ const [profile, setProfile] = useState(null)
   const [niches, setNiches] = useState([])
   const [projects, setProjects] = useState({})
   const [certs, setCerts] = useState([])
