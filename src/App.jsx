@@ -17,18 +17,16 @@ const LoadingScreen = () => (
 )
 
 export default function App() {
-  const [modal, setModal] = useState(null);
-  const [profile, setProfile] = useState(null)
+ const [profile, setProfile] = useState(FALLBACK_PROFILE)
   const [niches, setNiches] = useState([])
   const [projects, setProjects] = useState({})
   const [certs, setCerts] = useState([])
   const [activeTab, setActiveTab] = useState(null)
+  const [scrolled, setScrolled] = useState(false)
+  const [showExp, setShowExp] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  
-  // FIXED: Added the missing modal state
-  const [modal, setModal] = useState(null)
-
+  const [modal, setModal] = useState(null) // ONLY ONE OF THESE
+  const portfolioRef = useRef(null)
   useEffect(() => {
     async function loadData() {
       try {
