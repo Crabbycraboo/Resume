@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react'
 import NichePanel from './components/NichePanel'
 import ContactSection from './components/ContactSection'
@@ -16,6 +17,7 @@ const LoadingScreen = () => (
 )
 
 export default function App() {
+  const [modal, setModal] = useState(null);
   const [profile, setProfile] = useState(null)
   const [niches, setNiches] = useState([])
   const [projects, setProjects] = useState({})
@@ -98,6 +100,33 @@ export default function App() {
       </main>
 
       <ContactSection profile={profile} />
+      {modal && (
+  <div 
+    onClick={() => setModal(null)}
+    style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)', padding: 20 }}
+  >
+    <div 
+      onClick={e => e.stopPropagation()}
+      style={{ background: '#fff', borderRadius: 20, maxWidth: 800, width: '100%', overflow: 'hidden', position: 'relative' }}
+    >
+      <button 
+        onClick={() => setModal(null)}
+        style={{ position: 'absolute', top: 15, right: 15, border: 'none', background: '#eee', borderRadius: '50%', width: 30, height: 30, cursor: 'pointer', zIndex: 10 }}
+      >✕</button>
+      
+      {/* If it's a certificate or project image */}
+      <img 
+        src={modal.image_url} 
+        style={{ width: '100%', display: 'block', maxHeight: '80vh', objectFit: 'contain', background: '#f9f9f9' }} 
+        alt="Preview"
+      />
+      <div style={{ padding: 20 }}>
+        <h3 style={{ margin: 0 }}>{modal.title}</h3>
+        <p style={{ color: '#666', marginTop: 5 }}>{modal.issuer || modal.description}</p>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   )
 }
