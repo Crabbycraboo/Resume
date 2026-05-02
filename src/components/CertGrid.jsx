@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 
 const isPdf = url => url && url.toLowerCase().includes('.pdf')
 
-// Modal for image certs — useEffect imported at TOP of file, never via require()
 function CertModal({ cert, theme, onClose }) {
+  const [imgStatus, setImgStatus] = useState('loading') // 'loading' | 'ok' | 'error'
+
   useEffect(() => {
     const h = e => e.key === 'Escape' && onClose()
     window.addEventListener('keydown', h)
@@ -17,30 +18,32 @@ function CertModal({ cert, theme, onClose }) {
   const accent    = cert.color || theme?.accent    || '#E8527A'
   const accentAlt = cert.color || theme?.accentAlt || accent
   const gradHero  = theme?.gradHero || `linear-gradient(135deg,${accent},${accentAlt})`
+  const accentLight = theme?.accentLight || '#FFF0F3'
+  const border    = theme?.border || '#F8C0CC'
 
   return (
     <div
       onClick={onClose}
       style={{
-        position: 'fixed', inset: 0,
-        background: 'rgba(0,0,0,0.75)', zIndex: 1100,
+        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+        width: '100vw', height: '100vh',
+        background: 'rgba(0,0,0,0.75)', zIndex: 9999,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 20, backdropFilter: 'blur(8px)',
+        padding: '20px', backdropFilter: 'blur(8px)', overflow: 'hidden',
       }}
     >
       <div
         onClick={e => e.stopPropagation()}
         style={{
           background: '#fff', borderRadius: 24,
-          maxWidth: 740, width: '100%',
-          maxHeight: '90vh', overflowY: 'auto',
+          width: '100%', maxWidth: 740,
+          maxHeight: 'calc(100vh - 40px)', overflowY: 'auto',
           boxShadow: '0 40px 100px rgba(0,0,0,0.28)',
           animation: 'modalPop 0.28s cubic-bezier(0.34,1.56,0.64,1)',
-          overflow: 'hidden',
         }}
       >
         {/* Gradient stripe */}
-        <div style={{ height: 7, background: gradHero, borderRadius: '24px 24px 0 0' }} />
+        <div style={{ height: 7, background: gradHero, borderRadius: '24px 24px 0 0', position: 'sticky', top: 0, zIndex: 1 }} />
 
         {/* Header */}
         <div style={{ padding: '22px 28px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -48,39 +51,89 @@ function CertModal({ cert, theme, onClose }) {
             <p style={{ margin: '0 0 4px', fontSize: 17, fontWeight: 900, color: '#111' }}>{cert.title}</p>
             <p style={{ margin: 0, fontSize: 12, color: '#999' }}>{cert.issuer} · {cert.date || cert.date_issued}</p>
           </div>
-          <button
-            onClick={onClose}
-            style={{
-              background: '#F5F5F5', border: 'none', borderRadius: '50%',
-              width: 36, height: 36, cursor: 'pointer', fontSize: 16, color: '#666',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-            }}
-          >✕</button>
+          <button onClick={onClose} style={{
+            background: '#F5F5F5', border: 'none', borderRadius: '50%',
+            width: 36, height: 36, cursor: 'pointer', fontSize: 16, color: '#666',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>✕</button>
         </div>
 
-        {/* Image */}
+        {/* Image area */}
         <div style={{ padding: '0 28px 28px' }}>
+
+          {/* Loading skeleton */}
+          {imgStatus === 'loading' && (
+            <div style={{
+              width: '100%', height: 280, borderRadius: 14,
+              background: 'linear-gradient(90deg,#F0F0F0 25%,#E8E8E8 50%,#F0F0F0 75%)',
+              backgroundSize: '200% 100%',
+              animation: 'shimmer 1.2s infinite',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <p style={{ color: '#CCC', fontSize: 13, fontWeight: 700 }}>Loading…</p>
+            </div>
+          )}
+
+          {/* Broken / 404 fallback */}
+          {imgStatus === 'error' && (
+            <div style={{
+              width: '100%', borderRadius: 14,
+              background: accentLight,
+              border: `1.5px dashed ${border}`,
+              padding: '48px 24px',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              gap: 12,
+            }}>
+              <div style={{ fontSize: 36 }}>🏆</div>
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#111' }}>{cert.title}</p>
+              <p style={{ margin: 0, fontSize: 12, color: '#888' }}>{cert.issuer}</p>
+              <p style={{ margin: '8px 0 0', fontSize: 11, color: '#BBB', textAlign: 'center', maxWidth: 320 }}>
+                Certificate image unavailable — the file may have been moved or renamed in storage.
+              </p>
+              {cert.credential_url && (
+                <a href={cert.credential_url} target="_blank" rel="noreferrer" style={{
+                  marginTop: 8, padding: '10px 20px', borderRadius: 10,
+                  background: gradHero, color: '#fff', textDecoration: 'none',
+                  fontWeight: 800, fontSize: 13,
+                }}>
+                  Verify Credential ↗
+                </a>
+              )}
+            </div>
+          )}
+
+          {/* Actual image — hidden while loading, replaced by fallback on error */}
           <img
             src={cert.image_url}
             alt={cert.title}
-            style={{ width: '100%', borderRadius: 14, border: '1px solid #EDEDED', display: 'block' }}
+            onLoad={() => setImgStatus('ok')}
+            onError={() => setImgStatus('error')}
+            style={{
+              width: '100%', borderRadius: 14,
+              border: '1px solid #EDEDED', display: 'block',
+              // Hide until loaded — skeleton shows instead
+              display: imgStatus === 'ok' ? 'block' : 'none',
+            }}
           />
-          {cert.credential_url && (
-            <a
-              href={cert.credential_url}
-              target="_blank"
-              rel="noreferrer"
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: 16,
-                padding: '11px 22px', borderRadius: 12, background: gradHero,
-                color: '#fff', textDecoration: 'none', fontWeight: 800, fontSize: 13,
-              }}
-            >
+
+          {cert.credential_url && imgStatus === 'ok' && (
+            <a href={cert.credential_url} target="_blank" rel="noreferrer" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: 16,
+              padding: '11px 22px', borderRadius: 12, background: gradHero,
+              color: '#fff', textDecoration: 'none', fontWeight: 800, fontSize: 13,
+            }}>
               Verify Credential →
             </a>
           )}
         </div>
       </div>
+
+      <style>{`
+        @keyframes shimmer {
+          from { background-position: 200% 0 }
+          to   { background-position: -200% 0 }
+        }
+      `}</style>
     </div>
   )
 }
@@ -104,19 +157,15 @@ export default function CertGrid({ certs, theme }) {
       }}>
         {certs.map(c => {
           const hasPdf    = isPdf(c.image_url)
-          const hasImage  = !!(c.image_url && !hasPdf)   // .png / .jpg etc.
+          const hasImage  = !!(c.image_url && !hasPdf)
           const clickable = hasPdf || hasImage || !!c.credential_url
           const cAccent   = c.color || accent
 
           function handleClick() {
             if (!clickable) return
-            if (hasPdf) {
-              window.open(c.image_url, '_blank')
-            } else if (hasImage) {
-              setSelected(c)           // open image modal
-            } else if (c.credential_url) {
-              window.open(c.credential_url, '_blank')
-            }
+            if (hasPdf)              window.open(c.image_url, '_blank')
+            else if (hasImage)       setSelected(c)
+            else if (c.credential_url) window.open(c.credential_url, '_blank')
           }
 
           return (
@@ -124,8 +173,7 @@ export default function CertGrid({ certs, theme }) {
               key={c.id}
               onClick={handleClick}
               style={{
-                background: certBg,
-                borderRadius: 16,
+                background: certBg, borderRadius: 16,
                 border: `1.5px solid ${certBorder}`,
                 padding: '16px 18px 16px 20px',
                 display: 'flex', alignItems: 'flex-start', gap: 14,
@@ -147,7 +195,7 @@ export default function CertGrid({ certs, theme }) {
                 e.currentTarget.style.borderColor = certBorder
               }}
             >
-              {/* Gradient left bar */}
+              {/* Left gradient bar */}
               <div style={{
                 position: 'absolute', left: 0, top: 0, bottom: 0, width: 5,
                 background: `linear-gradient(180deg,${cAccent},${accentAlt})`,
@@ -170,9 +218,7 @@ export default function CertGrid({ certs, theme }) {
                 <p style={{ margin: '0 0 3px', fontSize: 13, fontWeight: 800, color: '#111', lineHeight: 1.35 }}>
                   {c.title}
                 </p>
-                <p style={{ margin: '0 0 4px', fontSize: 11.5, color: '#888', fontWeight: 600 }}>
-                  {c.issuer}
-                </p>
+                <p style={{ margin: '0 0 4px', fontSize: 11.5, color: '#888', fontWeight: 600 }}>{c.issuer}</p>
                 <p style={{ margin: 0, fontSize: 10.5, color: '#BBBBBB', fontWeight: 700 }}>
                   {c.date || c.date_issued}
                 </p>
@@ -187,13 +233,8 @@ export default function CertGrid({ certs, theme }) {
         })}
       </div>
 
-      {/* Image modal — only mounts when an image cert is selected */}
       {selected && (
-        <CertModal
-          cert={selected}
-          theme={theme}
-          onClose={() => setSelected(null)}
-        />
+        <CertModal cert={selected} theme={theme} onClose={() => setSelected(null)} />
       )}
     </>
   )
